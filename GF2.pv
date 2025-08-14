@@ -1,0 +1,97 @@
+(*--GF2--*)
+(*--The two public channel--*)
+free c: channel.
+
+(*--The basic type--*)
+type key.
+type host.
+
+(*--Type convertion--*)
+fun bitstring_to_key(bitstring): key [data,typeConverter].
+
+(*--Shared key encryption--*)
+fun encrypt(bitstring,key): bitstring.
+reduc forall x: bitstring, y: key; decrypt(encrypt(x,y),y) = x.
+
+(*--Hash operation--*) 
+fun H1(bitstring): bitstring.
+fun H2(bitstring,bitstring): bitstring.
+fun H3(bitstring,bitstring,bitstring):bitstring.
+
+(*--Concat operation--*)
+fun Concat(bitstring, bitstring): bitstring.
+
+
+(*--Secrecy assumptions
+not attacker(new hk).--*)
+
+(*--The basic variables--*)
+const Data1: bitstring.
+const Data2: bitstring.
+free U,S: host. (*---two participants in our scheme--*)
+free PID: bitstring. (*---the pseudo identity shared by U and S--*)
+free hk: bitstring[private]. (*---the shared key between U and S--*)
+
+table PsIDKey(bitstring, bitstring, bitstring).  (*---the table user's pseudo identity/IDi/key---*)
+
+
+(*--Authentication queries--*)
+event beginUparam(host).
+event endUparam(host).
+event beginSparam(host).
+event endSparam(host).
+
+query x: host; inj-event(endUparam(x)) ==> inj-event(beginUparam(x)).
+query x: host; inj-event(endSparam(x)) ==> inj-event(beginSparam(x)).
+
+
+
+(*--Queries--*)
+free secretA: bitstring [private].
+query attacker(secretA).
+
+(*--Role of the User with identity IDi and shared key hk--*)
+
+let processU(IDi: bitstring, Data1: bitstring, PID_i: bitstring) =
+
+        event beginUparam(U);
+        let CT = encrypt(Concat(IDi, Data1), bitstring_to_key(hk)) in
+        let h = H3(PID_i, IDi, Data1) in
+	 
+(*UO1*) out(c, (PID_i, CT, h)); 
+
+(*UR1*) in(c, (CT1:bitstring, h1:bitstring));
+
+      let (xPID_inew:bitstring, xData2:bitstring) = decrypt(CT1,bitstring_to_key(hk)) in
+      (* OK *)
+      let h1prime = H2(xPID_inew, xData2) in
+      if h1prime = h then 
+      event endSparam(S).
+
+
+let processS(IDi:bitstring,PIDi:bitstring,Data2:bitstring) =
+       (*UR1*) in(c, (PID_i:bitstring, CT:bitstring, h:bitstring));
+        let (xID:bitstring, xData1:bitstring) = decrypt(CT,bitstring_to_key(hk)) in
+        let h' = H3(PIDi, xID, xData1) in
+	       if h' =h then    
+          event endUparam(U);
+          event beginSparam(S);
+        new PID_inew:bitstring;
+	out(c, (encrypt(Concat(PID_inew, Data2), bitstring_to_key(hk)), H2(PID_inew, Data2))).
+ 	    
+
+(*--Start process--*)
+process
+	new IDi: bitstring; 
+	new PIDi:bitstring;
+	new Data1: bitstring;
+	new Data2 : bitstring; 
+	
+	
+	(
+          (*-- Launch an unbounded number of sessions of the U --*)
+          (!processU(IDi, Data1, PIDi)) | 
+          (*-- Launch an unbounded number of sessions of the S--*)
+          (!processS(IDi, PIDi, Data2))
+  )
+        
