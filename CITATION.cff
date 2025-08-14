@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Zhong"
+  given-names: "Jian"
+- family-names: "He"
+  given-names: "Sheng"
+- family-names: "Liu"
+  given-names: "Zhicai"
+- family-names: "Xiong"
+  given-names: "Ling"
+  orcid: "https://orcid.org/0000-0001-9900-2978"
+title: "ProVerif_GF"
+version: 1.0.0
+doi: 10.5281/zenodo.1234
+date-released: 2025-08-14
+url: "https://github.com/huol20/ProVerif_GF"
